@@ -1,0 +1,58 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  backend:
+    name: Backend (NestJS)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: anirate-backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: anirate-backend/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - name: Audit dependencies (high+)
+        run: npm audit --audit-level=high || true
+      - run: npm run build
+      - name: Run tests with coverage gate
+        env:
+          JWT_SECRET: test-secret-min-16-characters-long
+          NODE_ENV: test
+        run: npm run test:cov
+
+  frontend:
+    name: Frontend (Next.js)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: anirate-frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: anirate-frontend/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - name: Audit dependencies (high+)
+        run: npm audit --audit-level=high || true
+      - name: Type check
+        run: npx tsc --noEmit
+      - name: Unit tests with coverage gate
+        run: npm run test:coverage
+      - name: Build
+        env:
+          NEXT_PUBLIC_API_URL: http://localhost:5001
+        run: npm run build

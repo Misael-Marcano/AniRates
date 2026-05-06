@@ -1,0 +1,97 @@
+services:
+
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: anirate-sqlserver
+    environment:
+      SA_PASSWORD: "Misael.0530*"
+      ACCEPT_EULA: "Y"
+      MSSQL_PID: "Developer"
+    ports:
+      - "1435:1433"
+    volumes:
+      - sqlserver_data:/var/opt/mssql
+    healthcheck:
+      test: ["CMD", "/opt/mssql-tools18/bin/sqlcmd", "-S", "localhost", "-U", "sa", "-P", "Misael.0530*", "-Q", "SELECT 1", "-No"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  db-init:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: anirate-db-init
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+    restart: "no"
+    entrypoint: >
+      /bin/bash -c "
+      /opt/mssql-tools18/bin/sqlcmd -S sqlserver -U sa -P 'Misael.0530*' -No -Q \"IF NOT EXISTS (SELECT * FROM sys.databases WHERE name = 'AniRate') CREATE DATABASE AniRate\"
+      && echo 'Database AniRate ready.'
+      "
+
+  redis:
+    image: redis:7-alpine
+    container_name: anirate-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  adminer:
+    image: adminer:latest
+    container_name: anirate-adminer
+    ports:
+      - "8080:8080"
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+
+  backend:
+    build:
+      context: ./anirate-backend
+      dockerfile: Dockerfile
+    container_name: anirate-backend
+    ports:
+      - "5001:5001"
+    environment:
+      PORT: 5001
+      DB_HOST: sqlserver
+      DB_PORT: 1433
+      DB_USER: sa
+      DB_PASS: "Misael.0530*"
+      DB_NAME: AniRate
+      JWT_SECRET: anirate-super-secret-key
+      FRONTEND_URL: http://localhost:5000
+      NODE_ENV: development
+      LOG_LEVEL: debug
+      REDIS_URL: redis://redis:6379
+      MAIL_FROM: AniRate Dev <noreply@anirate.local>
+    depends_on:
+      db-init:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ./anirate-frontend
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: http://localhost:5001
+        NEXT_PUBLIC_JIKAN_VIA_BACKEND: "true"
+    container_name: anirate-frontend
+    ports:
+      - "5000:5000"
+    depends_on:
+      - backend
+
+volumes:
+  sqlserver_data:
+  redis_data:
