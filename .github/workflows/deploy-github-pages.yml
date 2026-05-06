@@ -1,4 +1,4 @@
-﻿# Static site under docs/. Full Next.js app is not static-exported here; see README Deploy section.
+# Static site under docs/. Full Next.js app is not static-exported here; see README Deploy section.
 
 name: Deploy GitHub Pages
 
@@ -32,7 +32,7 @@ jobs:
         uses: actions/configure-pages@v5
 
       - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v5
         with:
           path: docs
 
