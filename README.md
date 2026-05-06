@@ -125,6 +125,14 @@ En GitHub: **Settings → Pages → Build and deployment → Source: GitHub Acti
 
 Para la **demo completa** del producto, usa Docker o un proveedor con Node y variables configuradas.
 
+### GitHub Pages (repo público)
+
+GitHub **no** habilita Pages en repos **privados** en el plan gratuito (salvo GitHub Enterprise con Pages para privados). El repo debe ser **público** para que funcione la URL tipo `https://misael-marcano.github.io/AniRates/` con este workflow.
+
+En GitHub: **Settings → Pages → Build and deployment → Source: GitHub Actions** (no *Deploy from a branch*). Si aparece solicitud de aprobación del entorno **`github-pages`**, acéptala en la primera corrida. Tras un push a `main` que modifique `docs/**` o `.github/workflows/deploy-github-pages.yml`, revisa **Actions** para el workflow **Deploy GitHub Pages**.
+
+Si `git push` por HTTPS falla por autenticación, usa **`gh auth login`**, **SSH** o un **PAT (classic)** con alcance `repo`; detalle en la sección **Contribuir y publicar el remoto** más abajo.
+
 ## CI
 
 El archivo **[`.github/workflows/ci.yml`](.github/workflows/ci.yml)** ejecuta lint, tests y build del backend y del frontend en cada push o PR a `main`.
